@@ -2,6 +2,7 @@ services:
 
   mysql:
     image: mysql:8.0.38
+    container_name: mysql
     ports:
       - "3306:3306"
     environment:
@@ -10,28 +11,50 @@ services:
       MYSQL_USER: grafana
       MYSQL_PASSWORD: grafana
     networks:
-      - prometheus
+      - monitoring
 
-  grafana:
-    build:
-      context: .
-      dockerfile: grafana.dockerfile
+  mysqld_exporter:
+    image: prom/mysqld-exporter:latest
+    container_name: mysqld_exporter
+    volumes:
+      - ./.my.cnf:/.my.cnf 
     ports:
-      - "3000:3000"
+      - "9104:9104"
     networks:
-      - prometheus
+      - monitoring
+    depends_on:
+      - mysql
 
   prometheus:
     build:
       context: .
       dockerfile: prometheus.dockerfile
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/opt/bitnami/prometheus/conf/prometheus.yml
     ports:
       - "9090:9090"
     networks:
+      - monitoring
+    depends_on:
+      - mysqld_exporter
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  grafana:
+    build:
+      context: .
+      dockerfile: grafana.dockerfile
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - monitoring
+    depends_on:
       - prometheus
 
 networks:
-  prometheus:
+  monitoring:
     driver: bridge
     ipam:
       config:
