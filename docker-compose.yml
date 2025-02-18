@@ -1,0 +1,38 @@
+services:
+
+  mysql:
+    image: mysql:8.0.38
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: grafana
+      MYSQL_DATABASE: grafana
+      MYSQL_USER: grafana
+      MYSQL_PASSWORD: grafana
+    networks:
+      - prometheus
+
+  grafana:
+    build:
+      context: .
+      dockerfile: grafana.dockerfile
+    ports:
+      - "3000:3000"
+    networks:
+      - prometheus
+
+  prometheus:
+    build:
+      context: .
+      dockerfile: prometheus.dockerfile
+    ports:
+      - "9090:9090"
+    networks:
+      - prometheus
+
+networks:
+  prometheus:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.100.0/24
